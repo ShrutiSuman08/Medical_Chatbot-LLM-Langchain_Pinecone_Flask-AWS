@@ -3,6 +3,10 @@ name: Deploy Application Docker Image to EC2 instance
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - 'screenshots/**'
 
 jobs:
   Continuous-Integration:
@@ -57,13 +61,17 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPO }}
           IMAGE_TAG: latest
         run: |
+          # Stop and remove the old container
           docker stop medical-chatbot || true
           docker rm medical-chatbot || true
 
+          # Remove old unused images to free EC2 disk space
           docker image prune -a -f
 
+          # Pull the latest image from ECR
           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
+          # Start the new container
           docker run -d \
             --name medical-chatbot \
             --restart unless-stopped \
